@@ -13,13 +13,10 @@ connectDB();
 
 // Security middleware
 app.use(helmet());
+// Allow requests specifically from your frontend URL
 app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "https://mistaketomagic.vercel.app"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    credentials: true // Important if you are using cookies/sessions
 }));
 
 // Rate limiting
