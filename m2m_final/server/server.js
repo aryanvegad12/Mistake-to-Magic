@@ -14,10 +14,7 @@ connectDB();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "https://mistaketomagic.vercel.app"
-  ],
+  origin: process.env.CLIENT_URL || 'https://mistake-to-magic.vercel.app/',
   credentials: true
 }));
 
