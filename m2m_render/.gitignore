@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# Environment variables — NEVER commit these
+server/.env
+.env
+
+# React build output
+client/build/
+
+# Misc
+.DS_Store
+*.log
+npm-debug.log*
