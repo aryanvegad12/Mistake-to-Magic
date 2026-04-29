@@ -47,7 +47,7 @@ export default function Register() {
     if (form.targetExam.length === 0) return toast.error('Select at least one target exam');
     setLoading(true);
     try {
-      const { data } = await api.post('/api/auth/register', form);
+      const { data } = await api.post('/auth/register', form);
       setAuth(data.user, data.token);
       toast.success(data.message);
       navigate('/dashboard');
