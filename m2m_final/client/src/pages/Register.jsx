@@ -1,36 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
-
-const S = {
-  page: { minHeight: '100vh', background: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  card: { background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 28, padding: '40px 38px', width: '100%', maxWidth: 500, boxShadow: '0 25px 60px rgba(0,0,0,0.5)' },
-  header: { textAlign: 'center', marginBottom: 28 },
-  title: { fontSize: '1.55rem', fontWeight: 800, color: '#fff', marginBottom: 6 },
-  sub: { color: 'rgba(255,255,255,0.55)', fontSize: '0.85rem' },
-  row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 },
-  group: { marginBottom: 16 },
-  label: { display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'rgba(255,255,255,0.7)', marginBottom: 6 },
-  wrap: { position: 'relative' },
-  icon: { position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.35)', fontSize: '0.85rem' },
-  input: { width: '100%', padding: '11px 12px 11px 36px', background: 'rgba(255,255,255,0.09)', border: '1.5px solid rgba(255,255,255,0.18)', borderRadius: 11, color: '#fff', fontSize: '0.88rem', outline: 'none', transition: 'all 0.3s' },
-  select: { width: '100%', padding: '11px 12px 11px 36px', background: 'rgba(255,255,255,0.09)', border: '1.5px solid rgba(255,255,255,0.18)', borderRadius: 11, color: '#fff', fontSize: '0.88rem', outline: 'none', appearance: 'none', cursor: 'pointer' },
-  btn: { width: '100%', padding: 13, background: 'linear-gradient(135deg,#a78bfa,#7c3aed)', color: '#fff', border: 'none', borderRadius: 12, fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s', boxShadow: '0 6px 20px rgba(124,58,237,0.45)', marginTop: 8 },
-  linkRow: { textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '0.83rem', marginTop: 16 },
-  linkA: { color: '#a78bfa', fontWeight: 600, textDecoration: 'none' },
-  subjectclass: {background:'#1a1a2e'}
-};
-
-const STREAMS = ['Science (PCM)', 'Science (PCB)', 'Science (PCMB)'];
-const EXAMS = ['Board Exam','JEE Main', 'JEE Advanced', 'NEET', ];
+import celebrate from '../utils/celebrate';
+import { STREAMS, TARGET_EXAMS } from '../utils/subjects';
 
 export default function Register() {
-  const [form, setForm] = useState({ name: '', email: '', password: '', mobile: '', currentClass: '', stream: 'Science (PCM)', targetExam: ['Board Exam'] });
+  const [form, setForm] = useState({
+    name: '', email: '', password: '', mobile: '',
+    currentClass: '', stream: 'Science (PCM)', targetExam: ['Board Exam'],
+  });
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const { setAuth } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -49,6 +34,7 @@ export default function Register() {
     try {
       const { data } = await api.post('/auth/register', form);
       setAuth(data.user, data.token);
+      celebrate({ points: 0 });
       toast.success(data.message);
       navigate('/dashboard');
     } catch (err) {
@@ -56,95 +42,108 @@ export default function Register() {
     } finally { setLoading(false); }
   };
 
-  const inputFocus = e => { e.target.style.borderColor = '#a78bfa'; e.target.style.background = 'rgba(255,255,255,0.13)'; };
-  const inputBlur = e => { e.target.style.borderColor = 'rgba(255,255,255,0.18)'; e.target.style.background = 'rgba(255,255,255,0.09)'; };
-
   return (
-    <div style={S.page}>
-      <div style={S.card}>
-        <div style={S.header}>
-          <div style={{ fontSize: '2rem', marginBottom: 8 }}>🎯</div>
-          <h2 style={S.title}>Create Your Account</h2>
-          <p style={S.sub}>Join thousands of students improving their scores</p>
+    <div className="auth-wrap">
+      <button className="icon-btn auth-theme" onClick={toggleTheme} aria-label="Toggle theme">
+        <i className={`fas fa-${isDark ? 'sun' : 'moon'}`} />
+      </button>
+
+      <div className="auth-card auth-card-wide">
+        <div className="auth-head">
+          <div className="auth-mark">🎯</div>
+          <h1 className="auth-title">Create your account</h1>
+          <p className="auth-sub">Free for your first 2 months — no card needed</p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="auth-row-2">
-            <div style={S.group}>
-              <label style={S.label}>Full Name</label>
-              <div style={S.wrap}><i className="fas fa-user" style={S.icon} />
-                <input style={S.input} placeholder="Your Name" value={form.name} onChange={e => set('name', e.target.value)} required onFocus={inputFocus} onBlur={inputBlur} />
+          <div className="reg-row">
+            <div className="field">
+              <label className="label">Full name</label>
+              <div className="input-icon">
+                <i className="fas fa-user" />
+                <input className="input" placeholder="Your name" value={form.name}
+                  onChange={e => set('name', e.target.value)} required />
               </div>
             </div>
-            <div style={S.group}>
-              <label style={S.label}>Mobile Number</label>
-              <div style={S.wrap}><i className="fas fa-mobile-alt" style={S.icon} />
-                <input style={S.input} placeholder="10-digit number" maxLength={10} inputMode="numeric" value={form.mobile} onChange={e => set('mobile', e.target.value.replace(/\D/g,''))} required onFocus={inputFocus} onBlur={inputBlur} />
+            <div className="field">
+              <label className="label">Mobile number</label>
+              <div className="input-icon">
+                <i className="fas fa-mobile-screen" />
+                <input className="input" placeholder="10-digit number" maxLength={10} inputMode="numeric"
+                  value={form.mobile} onChange={e => set('mobile', e.target.value.replace(/\D/g, ''))} required />
               </div>
             </div>
           </div>
 
-          <div style={S.group}>
-            <label style={S.label}>Email Address</label>
-            <div style={S.wrap}><i className="fas fa-envelope" style={S.icon} />
-              <input type="email" style={S.input} placeholder="you@email.com" value={form.email} onChange={e => set('email', e.target.value)} required onFocus={inputFocus} onBlur={inputBlur} />
+          <div className="field">
+            <label className="label">Email address</label>
+            <div className="input-icon">
+              <i className="fas fa-envelope" />
+              <input type="email" className="input" placeholder="you@email.com" value={form.email}
+                onChange={e => set('email', e.target.value)} required />
             </div>
           </div>
 
-          <div style={S.group}>
-            <label style={S.label}>Password</label>
-            <div style={S.wrap}><i className="fas fa-lock" style={S.icon} />
-              <input type={showPass ? 'text' : 'password'} style={{ ...S.input, paddingRight: 40 }} placeholder="Min. 6 characters" value={form.password} onChange={e => set('password', e.target.value)} required onFocus={inputFocus} onBlur={inputBlur} />
-              <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+          <div className="field">
+            <label className="label">Password</label>
+            <div className="input-icon">
+              <i className="fas fa-lock" />
+              <input type={showPass ? 'text' : 'password'} className="input" placeholder="Min. 6 characters" style={{ paddingRight: 46 }}
+                value={form.password} onChange={e => set('password', e.target.value)} required minLength={6} />
+              <button type="button" className="input-affix" onClick={() => setShowPass(s => !s)} aria-label="Show password">
                 <i className={`fas fa-eye${showPass ? '-slash' : ''}`} />
               </button>
             </div>
           </div>
 
-          <div className="auth-row-2">
-            <div style={S.group}>
-              <label style={S.label}>Your Class</label>
-              <div style={S.wrap}><i className="fas fa-school" style={S.icon} />
-                <select style={S.select} value={form.currentClass} onChange={e => set('currentClass', e.target.value)} required onFocus={inputFocus} onBlur={inputBlur}>
-                  <option style={S.subjectclass} value="">Select class</option>
-                  <option style={S.subjectclass} value="11th">Class 11</option>
-                  <option style={S.subjectclass} value="12th">Class 12</option>
-                </select>
-              </div>
+          <div className="reg-row">
+            <div className="field">
+              <label className="label">Your class</label>
+              <select className="select" value={form.currentClass} onChange={e => set('currentClass', e.target.value)} required>
+                <option value="">Select class</option>
+                <option value="11th">Class 11</option>
+                <option value="12th">Class 12</option>
+              </select>
             </div>
-            <div style={S.group}>
-              <label style={S.label}>Stream</label>
-              <div style={S.wrap}><i className="fas fa-book" style={S.icon} />
-                <select style={S.select} value={form.stream} onChange={e => set('stream', e.target.value)} onFocus={inputFocus} onBlur={inputBlur}>
-                  {STREAMS.map(s => <option key={s} value={s} style={{ background: '#1a1a2e' }}>{s}</option>)}
-                </select>
-              </div>
+            <div className="field">
+              <label className="label">Stream</label>
+              <select className="select" value={form.stream} onChange={e => set('stream', e.target.value)}>
+                {STREAMS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
           </div>
 
-          <div style={S.group}>
-            <label style={S.label}>Target Exams (select all that apply)</label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {EXAMS.map(exam => (
+          <div className="field" style={{ marginBottom: 24 }}>
+            <label className="label">Target exams — pick all that apply</label>
+            <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+              {TARGET_EXAMS.map(exam => (
                 <button key={exam} type="button" onClick={() => toggleExam(exam)}
-                  style={{ padding: '6px 14px', borderRadius: 20, border: '1.5px solid', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                    background: form.targetExam.includes(exam) ? 'rgba(167,139,250,0.25)' : 'transparent',
-                    borderColor: form.targetExam.includes(exam) ? '#a78bfa' : 'rgba(255,255,255,0.2)',
-                    color: form.targetExam.includes(exam) ? '#a78bfa' : 'rgba(255,255,255,0.5)' }}>
+                  className={`chip${form.targetExam.includes(exam) ? ' is-active' : ''}`}>
+                  {form.targetExam.includes(exam) && <i className="fas fa-check" style={{ fontSize: '0.65rem' }} />}
                   {exam}
                 </button>
               ))}
             </div>
           </div>
 
-          <button type="submit" style={{ ...S.btn, opacity: loading ? 0.7 : 1 }} disabled={loading}>
-            {loading ? <><i className="fas fa-spinner fa-spin" style={{ marginRight: 8 }} />Creating Account...</> : <><i className="fas fa-rocket" style={{ marginRight: 8 }} />Start Learning Free</>}
+          <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading}>
+            {loading
+              ? <><i className="fas fa-spinner fa-spin" /> Creating account…</>
+              : <><i className="fas fa-rocket" /> Start learning free</>}
           </button>
         </form>
 
-        <p style={S.linkRow}>Already have an account? <Link to="/login" style={S.linkA}>Login</Link></p>
-        <p style={{ ...S.linkRow, marginTop: 6 }}><Link to="/" style={{ ...S.linkA, color: 'rgba(255,255,255,0.35)' }}>← Back to Home</Link></p>
+        <p className="auth-foot">Already have an account? <Link to="/login">Login</Link></p>
+        <p className="auth-foot" style={{ marginTop: 8 }}>
+          <Link to="/" style={{ color: 'var(--text-3)', fontWeight: 500 }}>← Back to home</Link>
+        </p>
       </div>
+
+      <style>{`
+        .auth-theme { position: fixed; top: 20px; right: 20px; z-index: 5; }
+        .reg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 520px) { .reg-row { grid-template-columns: 1fr; } }
+      `}</style>
     </div>
   );
 }

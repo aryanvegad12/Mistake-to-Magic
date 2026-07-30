@@ -8,13 +8,22 @@ const { protect } = require('../middleware/auth');
 // GET /api/mistakes — get all with filters, search, pagination
 router.get('/', protect, async (req, res) => {
   try {
-    const { subject, type, search, severity, page = 1, limit = 20, sort = '-createdAt', dueOnly } = req.query;
+    const { subject, type, search, severity, page = 1, limit = 20, sort = '-createdAt', dueOnly, from, to } = req.query;
     const filter = { user: req.user._id };
 
     if (subject && subject !== 'All') filter.subject = subject;
     if (type && type !== 'All') filter.mistakeType = type;
     if (severity && severity !== 'All') filter.severity = severity;
     if (dueOnly === 'true') filter.nextRevisionDate = { $lte: new Date() };
+
+    // Optional date window (ISO strings), e.g. ?from=2026-07-30T00:00:00.000Z
+    const fromDate = from ? new Date(from) : null;
+    const toDate   = to   ? new Date(to)   : null;
+    if ((fromDate && !isNaN(fromDate)) || (toDate && !isNaN(toDate))) {
+      filter.createdAt = {};
+      if (fromDate && !isNaN(fromDate)) filter.createdAt.$gte = fromDate;
+      if (toDate   && !isNaN(toDate))   filter.createdAt.$lte = toDate;
+    }
     if (search) {
       filter.$or = [
         { whatWentWrong: { $regex: search, $options: 'i' } },
@@ -63,13 +72,16 @@ router.post('/', protect, [
     // Award points
     await User.findByIdAndUpdate(req.user._id, { $inc: { totalPoints: 10 } });
 
-    // Check and award achievements
+    // Check and award achievements.
+    // Thresholds are >= (not ===) so a badge can't be skipped forever if the
+    // user deletes a mistake and crosses the same count again. $addToSet below
+    // makes re-awarding a no-op.
     const count = await Mistake.countDocuments({ user: req.user._id });
     const achievements = [];
-    if (count === 1) achievements.push('first_mistake');
-    if (count === 10) achievements.push('ten_mistakes');
-    if (count === 50) achievements.push('fifty_mistakes');
-    if (count === 100) achievements.push('hundred_mistakes');
+    if (count >= 1) achievements.push('first_mistake');
+    if (count >= 10) achievements.push('ten_mistakes');
+    if (count >= 50) achievements.push('fifty_mistakes');
+    if (count >= 100) achievements.push('hundred_mistakes');
 
     const subjectCount = await Mistake.distinct('subject', { user: req.user._id });
     if (subjectCount.length >= 6) achievements.push('all_subjects');

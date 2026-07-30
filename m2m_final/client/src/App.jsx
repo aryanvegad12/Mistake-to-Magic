@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -13,16 +14,18 @@ import AICoach from './pages/AICoach';
 import ExamCountdown from './pages/ExamCountdown';
 import Profile from './pages/Profile';
 
+const FullPageLoader = () => (
+  <div className="screen" style={{ placeContent: 'center' }}>
+    <div className="loading-block">
+      <div className="spinner" />
+      <p style={{ color: 'var(--text-3)', fontWeight: 600, fontSize: '0.88rem' }}>Loading your journal…</p>
+    </div>
+  </div>
+);
+
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1a2e' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div className="spinner" style={{ borderTopColor: '#a78bfa' }} />
-        <p style={{ color: '#a78bfa', marginTop: 16, fontWeight: 600 }}>Loading...</p>
-      </div>
-    </div>
-  );
+  if (loading) return <FullPageLoader />;
   return user ? children : <Navigate to="/login" replace />;
 };
 
@@ -52,17 +55,29 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: { fontFamily: 'Poppins', fontWeight: 600, fontSize: '0.875rem', borderRadius: '12px' }
-          }}
-        />
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              duration: 2800,
+              style: {
+                background: 'var(--bg-2)',
+                color: 'var(--text)',
+                border: '1px solid var(--border-strong)',
+                boxShadow: 'var(--shadow-md)',
+                fontFamily: 'Poppins',
+                fontWeight: 600,
+                fontSize: '0.86rem',
+                borderRadius: '14px',
+                padding: '12px 16px',
+              },
+            }}
+          />
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
