@@ -24,6 +24,9 @@ const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Too
 app.use('/api/', limiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+// Forgot-password verifies identity with email + mobile, so it is just as
+// brute-forceable as login — it gets the same tight limiter.
+app.use('/api/auth/forgot-password', authLimiter);
 
 // Body parsing
 app.use(express.json({ limit: '10kb' }));

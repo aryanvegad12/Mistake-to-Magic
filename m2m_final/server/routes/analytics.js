@@ -3,6 +3,11 @@ const router = express.Router();
 const Mistake = require('../models/Mistake');
 const { protect } = require('../middleware/auth');
 
+// Students are in India — bucket "days" by IST, not by the server's UTC clock,
+// so a mistake logged at 1 AM IST counts towards that day and not the previous one.
+const TZ = 'Asia/Kolkata';
+const dayKey = (date) => date.toLocaleDateString('en-CA', { timeZone: TZ }); // YYYY-MM-DD
+
 // GET /api/analytics/summary
 router.get('/summary', protect, async (req, res) => {
   try {
@@ -38,17 +43,19 @@ router.get('/summary', protect, async (req, res) => {
       { $group: { _id: '$severity', count: { $sum: 1 } } }
     ]);
 
-    // Last 7 days trend
+    // Last 7 days trend — one grouped query instead of seven counts
+    const trendAgg = await Mistake.aggregate([
+      { $match: { user: userId, createdAt: { $gte: weekAgo } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: TZ } }, count: { $sum: 1 } } }
+    ]);
+    const trendByDay = new Map(trendAgg.map(d => [d._id, d.count]));
+
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
-      const day = new Date(now);
-      day.setDate(day.getDate() - i);
-      day.setHours(0, 0, 0, 0);
-      const next = new Date(day); next.setDate(next.getDate() + 1);
-      const count = await Mistake.countDocuments({ user: userId, createdAt: { $gte: day, $lt: next } });
+      const day = new Date(now - i * 86400000);
       last7Days.push({
-        date: day.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }),
-        count
+        date: day.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', timeZone: TZ }),
+        count: trendByDay.get(dayKey(day)) || 0
       });
     }
 
@@ -79,7 +86,7 @@ router.get('/heatmap', protect, async (req, res) => {
     const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000);
     const data = await Mistake.aggregate([
       { $match: { user: userId, createdAt: { $gte: ninetyDaysAgo } } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: TZ } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ]);
     res.json({ success: true, heatmap: data });

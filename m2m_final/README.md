@@ -31,11 +31,13 @@ mistake-to-magic/
 │   └── src/
 │       ├── context/AuthContext.jsx   ← Global auth state
 │       ├── utils/api.js              ← Axios + interceptors
+│       ├── utils/subjects.js         ← Shared subject/stream/type options
 │       ├── components/Navbar.jsx     ← Shared navbar
 │       ├── pages/
 │       │   ├── Landing.jsx           ← Home page
 │       │   ├── Login.jsx             ← Login
 │       │   ├── Register.jsx          ← Register
+│       │   ├── ForgotPassword.jsx    ← Reset password (email + mobile)
 │       │   ├── Dashboard.jsx         ← Log mistake + stats
 │       │   ├── Journal.jsx           ← View/search/filter/revise
 │       │   ├── Analytics.jsx         ← Charts + insights
@@ -119,11 +121,14 @@ Open http://localhost:3000 in your browser!
 | GET | `/api/auth/me` | Get current user (protected) |
 | PUT | `/api/auth/profile` | Update profile (protected) |
 | PUT | `/api/auth/change-password` | Change password (protected) |
+| POST | `/api/auth/forgot-password/verify` | Step 1 — verify identity via email + registered mobile, returns a 15-min reset token |
+| POST | `/api/auth/forgot-password/reset` | Step 2 — consume reset token, set new password |
+| DELETE | `/api/auth/account` | Permanently delete the user + all mistakes + all exams (requires current password) |
 
 ### Mistakes
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/mistakes` | Get all (with filters: subject, type, severity, search, dueOnly, page, limit) |
+| GET | `/api/mistakes` | Get all (filters: subject, type, severity, search, dueOnly, from, to, page, limit, sort) |
 | POST | `/api/mistakes` | Create new mistake |
 | GET | `/api/mistakes/due` | Get mistakes due for revision |
 | GET | `/api/mistakes/:id` | Get single mistake |
@@ -177,7 +182,7 @@ Open http://localhost:3000 in your browser!
 - 🤖 **AI Coach** — Personalised insights based on actual mistake data
 - ⏰ **Exam Countdown** — Track JEE/NEET/Board exam dates
 - 🏆 **Gamification** — Points, streaks, achievement badges
-- 📤 **CSV Export** — Download full mistake journal
+- 📤 **CSV Export** — Download every mistake matching your current filters
 - 🔍 **Search & Filter** — By subject, type, severity, keyword, due date
 - 📱 **Mobile Responsive** — Works on all devices
 
@@ -186,7 +191,7 @@ Open http://localhost:3000 in your browser!
 ## 🛡️ Security Features
 
 - Helmet.js for HTTP headers
-- Rate limiting (200/15min general, 20/15min for auth)
+- Rate limiting (200/15min general, 20/15min for login, register & forgot-password)
 - JWT token expiry (30 days)
 - bcrypt password hashing (12 salt rounds)
 - Input validation with express-validator

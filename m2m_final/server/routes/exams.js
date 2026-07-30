@@ -29,9 +29,13 @@ router.post('/', protect, [
 
 router.put('/:id', protect, async (req, res) => {
   try {
+    const allowed = ['name', 'examDate', 'subject', 'notes', 'color', 'isCompleted'];
+    const updates = {};
+    allowed.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
+
     const exam = await Exam.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
-      req.body, { new: true }
+      updates, { new: true, runValidators: true }
     );
     if (!exam) return res.status(404).json({ success: false, message: 'Exam not found.' });
     res.json({ success: true, message: 'Exam updated!', exam });

@@ -3,6 +3,8 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const Mistake = require('../models/Mistake');
+const Exam = require('../models/Exam');
 const { protect } = require('../middleware/auth');
 
 const signToken = (id) =>
@@ -181,6 +183,34 @@ router.put('/change-password', protect, [
     await user.save();
     res.json({ success: true, message: 'Password changed successfully!' });
   } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+// DELETE /api/auth/account
+// Permanently removes the user and everything they own. Requires the current
+// password because this cannot be undone.
+router.delete('/account', protect, [
+  body('password').notEmpty().withMessage('Password is required to delete your account')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, message: errors.array()[0].msg });
+  try {
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    const isMatch = await user.comparePassword(req.body.password);
+    if (!isMatch) return res.status(401).json({ success: false, message: 'Password is incorrect.' });
+
+    await Promise.all([
+      Mistake.deleteMany({ user: user._id }),
+      Exam.deleteMany({ user: user._id })
+    ]);
+    await User.findByIdAndDelete(user._id);
+
+    res.json({ success: true, message: 'Your account and all data have been deleted.' });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
